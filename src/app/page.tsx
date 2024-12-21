@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { fetchData } from "./actions";
 import {
   Table,
   TableBody,
@@ -19,10 +20,17 @@ export default function Home() {
 
   const handleSearch = async () => {
     const queryArray = queries.split("\n").filter((query) => query.trim() !== "");
+    const initialResults = queryArray.map((query) => ({
+      query,
+      result: null,
+      status: "In Progress",
+    }));
+    setResults(initialResults);
+
     const searchResults = await Promise.all(
       queryArray.map(async (query) => {
-        // Replace with actual search logic
-        return { query, result: `Result for ${query}`, status: "Success" };
+        const result = await fetchData(query);
+        return { ...result, status: "Completed" };
       })
     );
     setResults(searchResults);
@@ -104,7 +112,7 @@ export default function Home() {
                   className={`transition duration-150 ${index % 2 === 0 ? 'bg-gray-800' : 'bg-gray-700'} hover:bg-gray-600`}
                 >
                   <TableCell className="text-white border-b border-gray-600">{result.query}</TableCell>
-                  <TableCell className="text-white border-b border-gray-600">{result.result}</TableCell>
+                  <TableCell className="text-white border-b border-gray-600">{result.result ? result.result : "Loading..."}</TableCell>
                   <TableCell className="text-white border-b border-gray-600">{result.status}</TableCell>
                 </TableRow>
               ))}

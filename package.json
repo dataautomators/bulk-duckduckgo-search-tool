@@ -2,6 +2,7 @@
   "name": "bulk-searching-tool",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
@@ -11,10 +12,13 @@
   "dependencies": {
     "@prisma/client": "6.1.0",
     "@radix-ui/react-slot": "^1.1.1",
+    "axios": "^1.7.9",
+    "cheerio": "^1.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.469.0",
     "next": "15.1.2",
+    "puppeteer": "^23.11.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.5.5",
