@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { load } from 'cheerio';
 
-const fetchData = async (query: string) => {
+const fetchData = async (query) => {
   const url = `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
   const options = {
     method: 'GET',
@@ -17,31 +17,30 @@ const fetchData = async (query: string) => {
     const { data } = await axios.request(options);
     const $ = load(data);
 
-    // Extract the first result title and additional information
-    const firstResult = $('#links .result').first();
-    const firstResultTitle = firstResult.find('.result__title').text().trim();
-    const firstResultSnippet = firstResult.find('.result__snippet').text().trim();
-    const firstResultUrl = firstResult.find('.result__url').text().trim();
+    // Extracting information
+    const firstResult = $('.yuRUbf').first(); // Adjusted selector for results
+    const title = firstResult.find('h3.LC20lb').text().trim();
+    const link = firstResult.find('a').attr('href'); // Extract URL directly from <a>
+    
+    // Extract description (if available)
+    const description = firstResult.closest('.kb0PBd').find('.VwiC3b').text().trim();
 
     return { 
       query, 
       result: {
-        title: firstResultTitle,
-        snippet: firstResultSnippet,
-        url: firstResultUrl
+        title,
+        description,
+        url: link
       }, 
       status: "Success" 
     };
   } catch (error) {
-    console.error(error);
-    return { query, result: null, status: "Error" };
+    console.error("Error fetching data:", error.message);
+    return { query, result: null, status: "Error", message: error.message };
   }
 };
 
-
-
-
-
-fetchData(' Mohammad Oli Ahad ').then(console.log);
+// Example usage
+fetchData('Oli Ahmad').then(console.log);
 
 export { fetchData };
