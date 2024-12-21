@@ -1,46 +1,101 @@
-import axios from 'axios';
-import { load } from 'cheerio';
+"use server";
 
-const fetchData = async (query) => {
-  const url = `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
-  const options = {
-    method: 'GET',
-    url: 'https://api.scrapeautomate.com/scraper',
-    params: {
-      apiKey: '5420e899-f524-40d1-a264-c07d1db5cf8d',
-      render: 'true',
-      url: url
-    }
-  };
+import prisma from "@/scraper/prisma";
+import { jobQueue } from "@/scraper/queue";
+import * as zod from "zod";
 
-  try {
-    const { data } = await axios.request(options);
-    const $ = load(data);
+const searchSchema = zod.object({
+  queries: zod.array(zod.string({ message: "Query cannot be empty" })),
+  fingerprint: zod.string(),
+});
 
-    // Extracting information
-    const firstResult = $('.yuRUbf').first(); // Adjusted selector for results
-    const title = firstResult.find('h3.LC20lb').text().trim();
-    const link = firstResult.find('a').attr('href'); // Extract URL directly from <a>
-    
-    // Extract description (if available)
-    const description = firstResult.closest('.kb0PBd').find('.VwiC3b').text().trim();
+export const getSearches = async (fingerprint: string) => {
+  if (!fingerprint) {
+    return { error: "Fingerprint is required" };
+  }
 
-    return { 
-      query, 
-      result: {
-        title,
-        description,
-        url: link
-      }, 
-      status: "Success" 
-    };
-  } catch (error) {
-    console.error("Error fetching data:", error.message);
-    return { query, result: null, status: "Error", message: error.message };
+  const searches = await prisma.search.findMany({
+    where: {
+      userFingerprints: {
+        has: fingerprint,
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return searches;
+};
+
+export const addSearches = async (searches: {
+  queries: string[];
+  fingerprint: string;
+}) => {
+  // validate the search queries
+  const validQueries = searchSchema.safeParse(searches);
+
+  if (!validQueries.success) {
+    return { error: validQueries.error.errors.join(", ") };
+  }
+
+  const { queries, fingerprint } = validQueries.data;
+
+  for (const query of queries) {
+    addSearch({ query, fingerprint });
   }
 };
 
-// Example usage
-fetchData('Oli Ahmad').then(console.log);
+const addSearch = async (search: { query: string; fingerprint: string }) => {
+  //find or create a search
+  const existingSearch = await prisma.search.findFirst({
+    where: {
+      query: search.query,
+    },
+  });
 
-export { fetchData };
+  if (existingSearch?.status === "COMPLETED") {
+    if (existingSearch.userFingerprints.includes(search.fingerprint)) return;
+
+    // add the fingerprint to the search
+    await prisma.search.update({
+      where: {
+        id: existingSearch.id,
+      },
+      data: {
+        userFingerprints: {
+          push: search.fingerprint,
+        },
+      },
+    });
+    return;
+  }
+
+  if (existingSearch?.status === "FAILED") {
+    // reset the search status
+    await prisma.search.update({
+      where: {
+        id: existingSearch.id,
+      },
+      data: {
+        status: "PENDING",
+        failedMessage: null,
+        failedAttempts: 0,
+      },
+    });
+  }
+
+  let searchId = existingSearch?.id;
+
+  if (!searchId) {
+    const newSearch = await prisma.search.create({
+      data: {
+        query: search.query,
+        userFingerprints: [search.fingerprint],
+      },
+    });
+    searchId = newSearch.id;
+  }
+
+  await jobQueue.add("search", { id: searchId });
+};
