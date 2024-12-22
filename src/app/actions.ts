@@ -9,23 +9,40 @@ const searchSchema = zod.object({
   fingerprint: zod.string(),
 });
 
-export const getSearches = async (fingerprint: string) => {
+export const getSearches = async (
+  fingerprint: string,
+  page: number,
+  pageSize: number = 10
+) => {
   if (!fingerprint) {
     return { error: "Fingerprint is required" };
   }
 
-  const searches = await prisma.search.findMany({
-    where: {
-      userFingerprints: {
-        has: fingerprint,
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+  const pageNumber = page || 1;
 
-  return searches;
+  const [searches, totalCount] = await Promise.all([
+    await prisma.search.findMany({
+      where: {
+        userFingerprints: {
+          has: fingerprint,
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      skip: (pageNumber - 1) * pageSize,
+      take: pageSize,
+    }),
+    await prisma.search.count({
+      where: {
+        userFingerprints: {
+          has: fingerprint,
+        },
+      },
+    }),
+  ]);
+
+  return { searches, meta: { totalCount, page: pageNumber, pageSize } };
 };
 
 export const addSearches = async (searches: {
