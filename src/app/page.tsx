@@ -19,16 +19,15 @@ export default function Home() {
                     href="https://scrapeautomate.com/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-semibold text-blue-500 hover:text-blue-500/80 transition-colors duration-200"
-                  >
-                    ScrapeAutomate 
+                    className="font-semibold text-sm text-blue-500 hover:text-blue-500/80 transition-colors duration-200"
+                  >ScrapeAutomate
                   </a>
-                  <span className="text-sm"> and Develoved By</span>
+                  <span className="text-sm">| Develoved By</span>
                   <a
                     href="https://scrapeautomate.com/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-semibold text-blue-500 hover:text-blue-500/80 transition-colors duration-200"
+                    className="font-semibold text-sm text-blue-500 hover:text-blue-500/80 transition-colors duration-200"
                   >
                     DataAutomators
                   </a>
@@ -51,9 +50,9 @@ export default function Home() {
             href="https://dataautomators.io/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 transition-colors duration=200"
+            className="bg-white-400 text-blue-400 hover:text-blue-300 transition-colors duration=200"
           >
-            Data Automators
+            DataAutomators
           </a>
           . All rights reserved.
         </p>
