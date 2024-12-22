@@ -3,6 +3,8 @@ import prisma from "@/scraper/prisma";
 import { Job, Queue, Worker } from "bullmq";
 import { fetchData, ScraperError } from "./scrape-data";
 
+const concurrency = Number(process.env.WORKER_CONCURRENCY || 1);
+
 export const jobQueue = new Queue<{ id: string }>("scraper", {
   connection,
   defaultJobOptions: {
@@ -23,7 +25,7 @@ const worker = new Worker(
     const { id } = job.data;
 
     try {
-      console.log(`Processing job ${job.id}`);
+      console.log(`Processing job ${id}`);
 
       const search = await prisma.search.findUnique({
         where: {
@@ -78,5 +80,5 @@ const worker = new Worker(
       throw error;
     }
   },
-  { connection }
+  { connection, concurrency }
 );
