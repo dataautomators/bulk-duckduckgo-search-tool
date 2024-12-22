@@ -13,6 +13,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import useFingerprint from "@/hooks/useFingerprint";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -22,6 +24,7 @@ const formSchema = z.object({
 
 export default function SearchForm() {
   const { fingerprint } = useFingerprint();
+  const [loading, setLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -31,8 +34,7 @@ export default function SearchForm() {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
+    setLoading(true);
     const formattedQueries = values.queries
       .split("\n")
       .map((query) => query.trim())
@@ -42,6 +44,7 @@ export default function SearchForm() {
 
     // Clear the form
     form.reset();
+    setLoading(false);
   };
 
   return (
@@ -63,7 +66,12 @@ export default function SearchForm() {
             )}
           />
           <div className="flex justify-center space-x-4 mb-4">
-            <Button type="submit">Process</Button>
+            <Button disabled={loading} type="submit">
+              {loading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Process
+            </Button>
             <Button
               type="button"
               variant="outline"
