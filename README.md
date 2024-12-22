@@ -1,8 +1,8 @@
 # 🔍 Bulk DuckDuckGo Search Tool
 
-<div align="center">
 
-[![Next.js](https://img.shields.io/badge/Next.js-13-black)](https://nextjs.org)
+
+[![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Powered by ScrapeAutomate](https://img.shields.io/badge/Powered%20by-ScrapeAutomate-orange)](https://scrapeautomate.com)
@@ -11,41 +11,72 @@
 
 ### Prerequisites
 
-- Node.js 18.0 or later
-- pnpm 8.0 or later
-- Redis server (for BullMQ)
+Before you begin, ensure you have the following installed:
 
-### Installation
+- **Node.js** 18.0 or later
+- **pnpm** 8.0 or later
+- A **Redis server** (for BullMQ)
 
-1. Clone the repository
+### Installation Steps
 
-```bash
-git clone https://github.com/dataautomators/bulk-duckduckgo-search-tool.git
-cd bulk-duckduckgo-search-tool
-```
+1. **Clone the Repository**
 
-2. Install the dependencies:
+   ```
+   git clone https://github.com/dataautomators/bulk-duckduckgo-search-tool.git
+   cd bulk-duckduckgo-search-tool
+   ```
 
-```bash
-pnpm install
-```
+2. **Install Dependencies**
 
-3. Copy the `.env.example` file to `.env` and update the environment variables:
+   ```
+   pnpm install
+   ```
 
-```bash
-cp .env.example .env
-```
+3. **Start Docker Services**
 
-4. Sync the database:
+   ```
+   docker compose up -d
+   ```
 
-```bash
-pnpm db:deploy
-```
+4. **Configure Environment Variables**
 
-4. Run the development server:
+   Copy the example environment file and customize it as needed:
 
-```bash
-pnpm dev
-```
+   ```
+   cp .env.example .env
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. **Deploy the Database**
+
+   Sync your database with the following command:
+
+   ```
+   pnpm db:deploy
+   ```
+
+6. **Run the Development Server**
+
+   Start your development server:
+
+   ```
+   pnpm dev
+   ```
+
+7. **Access the Application**
+
+   Open your browser and navigate to [http://localhost:3000](http://localhost:3000) to view the application.
+
+## Features
+
+- **Bulk Search**: Perform multiple searches simultaneously.
+- **User-Friendly Interface**: Built on Next.js for a seamless experience.
+
+
+## License
+
+This project is licensed under the MIT License.
+
+## Acknowledgments
+
+A product of [DataAutomators](https://dataautomators.io)
+
