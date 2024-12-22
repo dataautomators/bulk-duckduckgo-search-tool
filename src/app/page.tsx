@@ -14,14 +14,23 @@ export default function Home() {
                   Bulk DuckDuckGo Search Tool
                 </h1>
                 <div className="flex justify-end items-center space-x-2 text-muted-foreground">
-                  <span className="text-lg">Powered by</span>
+                  <span className="text-sm">Powered by</span>
                   <a
                     href="https://scrapeautomate.com/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-semibold text-blue-500 hover:text-blue-500/80 transition-colors duration-200"
                   >
-                    ScrapeAutomate
+                    ScrapeAutomate 
+                  </a>
+                  <span className="text-sm"> and Develoved By</span>
+                  <a
+                    href="https://scrapeautomate.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-blue-500 hover:text-blue-500/80 transition-colors duration-200"
+                  >
+                    DataAutomators
                   </a>
                 </div>
               </div>
