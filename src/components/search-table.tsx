@@ -24,6 +24,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { useSearchParams } from "next/navigation";
+import Pagination from "./pagination";
 
 function ResultAccordion({ result }: { result: string[] }) {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -50,8 +52,8 @@ function ResultAccordion({ result }: { result: string[] }) {
         <CollapsibleContent className="space-y-2">
           <ol className="list-decimal list-inside" start={2}>
             {restResults.length &&
-              restResults.map((item) => (
-                <li key={item} className="font-mono text-sm">
+              restResults.map((item, index) => (
+                <li key={item + index} className="font-mono text-sm">
                   {item}
                 </li>
               ))}
@@ -64,6 +66,13 @@ function ResultAccordion({ result }: { result: string[] }) {
 
 export default function SearchTable() {
   const [searchResults, setSearchResults] = useState<Search[]>([]);
+  const params = useSearchParams();
+  const pageParam = params.get("page");
+  const [meta, setMeta] = useState({
+    totalCount: 0,
+    page: 1,
+    pageSize: 10,
+  });
 
   const { fingerprint } = useFingerprint();
 
@@ -71,7 +80,13 @@ export default function SearchTable() {
     const fetchSearches = async () => {
       if (!fingerprint) return null;
 
-      const searches = await getSearches(fingerprint);
+      const page = pageParam ? parseInt(pageParam) : 1;
+
+      const { searches, meta } = await getSearches(fingerprint, page, 10);
+
+      if (meta) {
+        setMeta(meta);
+      }
 
       if (searches) {
         setSearchResults(searches as Search[]);
@@ -84,7 +99,7 @@ export default function SearchTable() {
       await fetchSearches();
     }, 5000); // Poll every 5 seconds
     return () => clearInterval(interval);
-  }, [fingerprint]);
+  }, [fingerprint, pageParam]);
 
   return (
     <div className="w-full max-w-5xl mt-4 shadow-md pb-4">
@@ -92,7 +107,7 @@ export default function SearchTable() {
         <TableCaption>Search Results</TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead className="text-primary">Query</TableHead>
+            <TableHead className="text-primary md:w-[30%]">Query</TableHead>
             <TableHead className="text-primary w-full">Result</TableHead>
             <TableHead className="text-primary text-center">Status</TableHead>
           </TableRow>
@@ -128,11 +143,16 @@ export default function SearchTable() {
         <TableFooter>
           <TableRow>
             <TableCell colSpan={3} className="text-right font-bold">
-              Total Queries: {searchResults.length}
+              {searchResults.length} of {meta.totalCount} results
             </TableCell>
           </TableRow>
         </TableFooter>
       </Table>
+      <Pagination
+        total={meta.totalCount}
+        currentPage={meta.page}
+        pageSize={meta.pageSize}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import SearchForm from "@/components/search-form";
 import SearchTable from "@/components/search-table";
+import { Suspense } from "react";
 
 export default function Home() {
   return (
@@ -30,7 +31,9 @@ export default function Home() {
 
         <SearchForm />
 
-        <SearchTable />
+        <Suspense fallback={<div>Loading...</div>}>
+          <SearchTable />
+        </Suspense>
       </div>
       <footer className="text-center py-4">
         <p className="flex items-center justify-center gap-1">
