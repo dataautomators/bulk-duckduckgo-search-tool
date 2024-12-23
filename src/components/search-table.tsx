@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/collapsible";
 import { useSearchParams } from "next/navigation";
 import Pagination from "./pagination";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 function ResultAccordion({ result }: { result: string[] }) {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -68,6 +69,7 @@ export default function SearchTable() {
   const [searchResults, setSearchResults] = useState<Search[]>([]);
   const params = useSearchParams();
   const pageParam = params.get("page");
+  const [pageSize, setPageSize] = useState(10);
   const [meta, setMeta] = useState({
     totalCount: 0,
     page: 1,
@@ -82,7 +84,7 @@ export default function SearchTable() {
 
       const page = pageParam ? parseInt(pageParam) : 1;
 
-      const { searches, meta } = await getSearches(fingerprint, page, 10);
+      const { searches, meta } = await getSearches(fingerprint, page, pageSize);
 
       if (meta) {
         setMeta(meta);
@@ -90,6 +92,7 @@ export default function SearchTable() {
 
       if (searches) {
         setSearchResults(searches as Search[]);
+
       }
     };
 
@@ -99,10 +102,28 @@ export default function SearchTable() {
       await fetchSearches();
     }, 5000); // Poll every 5 seconds
     return () => clearInterval(interval);
-  }, [fingerprint, pageParam]);
+  }, [fingerprint, pageParam, pageSize]);
 
   return (
     <div className="mb-4 p-6 shadow-md rounded-lg w-full max-w-5xl space-y-4">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex space-x-4">
+        </div>
+        <Select
+          value={pageSize.toString()}
+          onValueChange={(value) => setPageSize(parseInt(value))}
+        >
+          <SelectTrigger className="w-32">
+            <SelectValue placeholder="Page Size" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="5">5</SelectItem>
+            <SelectItem value="10">10</SelectItem>
+            <SelectItem value="20">20</SelectItem>
+            <SelectItem value="50">50</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       <Table className="rounded-lg border">
         <TableCaption></TableCaption>
         <TableHeader>
