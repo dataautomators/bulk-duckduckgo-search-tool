@@ -104,7 +104,7 @@ export default function SearchTable() {
   return (
     <div className="mb-4 p-6 shadow-md rounded-lg w-full max-w-5xl space-y-4">
       <Table className="rounded-lg border">
-        <TableCaption>Search Results</TableCaption>
+        <TableCaption></TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="text-primary md:w-[30%]">Query</TableHead>
