@@ -1,6 +1,6 @@
 "use client";
 
-import { getSearches } from "@/app/actions";
+import { getSearches, deleteSearchesByFingerprint } from "@/app/actions";
 import {
   Table,
   TableBody,
@@ -92,7 +92,6 @@ export default function SearchTable() {
 
       if (searches) {
         setSearchResults(searches as Search[]);
-
       }
     };
 
@@ -104,10 +103,20 @@ export default function SearchTable() {
     return () => clearInterval(interval);
   }, [fingerprint, pageParam, pageSize]);
 
+  const handleClear = async () => {
+    if (fingerprint) {
+      await deleteSearchesByFingerprint(fingerprint);
+      setSearchResults([]);
+    }
+  };
+
   return (
     <div className="mb-4 p-6 shadow-md rounded-lg w-full max-w-5xl space-y-4">
       <div className="flex justify-between items-center mb-4">
         <div className="flex space-x-4">
+          <Button variant="outline" onClick={handleClear}>
+            Clear Searches
+          </Button>
         </div>
         <Select
           value={pageSize.toString()}

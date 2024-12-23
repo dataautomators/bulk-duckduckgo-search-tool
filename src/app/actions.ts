@@ -1,5 +1,6 @@
 "use server";
 
+import { connection } from "@/lib/redis";
 import prisma from "@/scraper/prisma";
 import { jobQueue } from "@/scraper/queue";
 import * as zod from "zod";
@@ -9,7 +10,8 @@ const searchSchema = zod.object({
   fingerprint: zod.string(),
 });
 
-export const getSearches = async (
+
+const getSearches = async (
   fingerprint: string,
   page: number,
   pageSize: number = 10
@@ -23,20 +25,20 @@ export const getSearches = async (
   const [searches, totalCount] = await Promise.all([
     await prisma.search.findMany({
       where: {
-        userFingerprints: {
-          has: fingerprint,
+        user: {
+          fingerprint: fingerprint,
         },
       },
       orderBy: {
-        createdAt: "asc", // Change to ascending order
+        createdAt: "asc",
       },
       skip: (pageNumber - 1) * pageSize,
       take: pageSize,
     }),
     await prisma.search.count({
       where: {
-        userFingerprints: {
-          has: fingerprint,
+        user: {
+          fingerprint: fingerprint,
         },
       },
     }),
@@ -44,12 +46,10 @@ export const getSearches = async (
 
   return { searches, meta: { totalCount, page: pageNumber, pageSize } };
 };
-
-export const addSearches = async (searches: {
+ const addSearches = async (searches: {
   queries: string[];
   fingerprint: string;
 }) => {
-  // validate the search queries
   const validQueries = searchSchema.safeParse(searches);
 
   if (!validQueries.success) {
@@ -58,38 +58,37 @@ export const addSearches = async (searches: {
 
   const { queries, fingerprint } = validQueries.data;
 
-  for (const query of queries) {
-    addSearch({ query, fingerprint });
+  let user = await prisma.user.findUnique({
+    where: { fingerprint },
+  });
+
+  if (!user) {
+    user = await prisma.user.create({
+      data: { fingerprint },
+    });
   }
+
+  for (const query of queries) {
+    await addSearch({ query, fingerprint, userId: user.id });
+  }
+
+  // Cache the user and searches for 1 day
+  await connection.setex(fingerprint, 86400, JSON.stringify({ user, searches }));
 };
 
-const addSearch = async (search: { query: string; fingerprint: string }) => {
-  //find or create a search
+const addSearch = async (search: { query: string; fingerprint: string; userId: string }) => {
   const existingSearch = await prisma.search.findFirst({
     where: {
       query: search.query,
+      userId: search.userId,
     },
   });
 
   if (existingSearch?.status === "COMPLETED") {
-    if (existingSearch.userFingerprints.includes(search.fingerprint)) return;
-
-    // add the fingerprint to the search
-    await prisma.search.update({
-      where: {
-        id: existingSearch.id,
-      },
-      data: {
-        userFingerprints: {
-          push: search.fingerprint,
-        },
-      },
-    });
     return;
   }
 
   if (existingSearch?.status === "FAILED") {
-    // reset the search status
     await prisma.search.update({
       where: {
         id: existingSearch.id,
@@ -108,7 +107,7 @@ const addSearch = async (search: { query: string; fingerprint: string }) => {
     const newSearch = await prisma.search.create({
       data: {
         query: search.query,
-        userFingerprints: [search.fingerprint],
+        userId: search.userId,
       },
     });
     searchId = newSearch.id;
@@ -116,3 +115,39 @@ const addSearch = async (search: { query: string; fingerprint: string }) => {
 
   await jobQueue.add("search", { id: searchId });
 };
+
+ const deleteSearchesByFingerprint = async (fingerprint: string) => {
+  const user = await prisma.user.findUnique({
+    where: { fingerprint },
+  });
+
+  if (user) {
+    await prisma.search.deleteMany({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    await prisma.user.delete({
+      where: {
+        id: user.id,
+      },
+    });
+
+    // Clear the cache
+    await connection.del(fingerprint);
+  }
+};
+
+
+
+
+export {
+
+  addSearch,
+  getSearches,
+  addSearches,
+  deleteSearchesByFingerprint
+
+}
+
