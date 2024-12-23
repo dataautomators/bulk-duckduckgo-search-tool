@@ -28,7 +28,7 @@ export const getSearches = async (
         },
       },
       orderBy: {
-        createdAt: "desc",
+        createdAt: "asc", // Change to ascending order
       },
       skip: (pageNumber - 1) * pageSize,
       take: pageSize,

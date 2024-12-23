@@ -26,6 +26,7 @@ export default function SearchForm() {
   const { fingerprint } = useFingerprint();
   const [loading, setLoading] = useState(false);
 
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -40,11 +41,13 @@ export default function SearchForm() {
       .map((query) => query.trim())
       .filter(Boolean);
 
+    // simulate processing
+    await new Promise((resolve) => setTimeout(resolve, 2000))
     await addSearches({ queries: formattedQueries, fingerprint: fingerprint! });
-
-    // Clear the form
-    form.reset();
     setLoading(false);
+
+    form.reset();
+
   };
 
   return (
@@ -68,9 +71,13 @@ export default function SearchForm() {
           <div className="flex justify-center space-x-4 mb-4">
             <Button disabled={loading} type="submit">
               {loading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Process
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Process'
+              )}
             </Button>
             <Button
               type="button"
