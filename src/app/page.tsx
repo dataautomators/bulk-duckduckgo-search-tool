@@ -14,14 +14,22 @@ export default function Home() {
                   Bulk DuckDuckGo Search Tool
                 </h1>
                 <div className="flex justify-end items-center space-x-2 text-muted-foreground">
-                  <span className="text-lg">Powered by</span>
+                  <span className="text-sm">Powered by</span>
                   <a
                     href="https://scrapeautomate.com/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-semibold text-blue-500 hover:text-blue-500/80 transition-colors duration-200"
+                    className="font-semibold text-sm text-blue-500 hover:text-blue-500/80 transition-colors duration-200"
+                  >ScrapeAutomate
+                  </a>
+                  <span className="text-sm">| Built By</span>
+                  <a
+                    href="https://scrapeautomate.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-sm text-blue-500 hover:text-blue-500/80 transition-colors duration-200"
                   >
-                    ScrapeAutomate
+                    DataAutomators
                   </a>
                 </div>
               </div>
@@ -42,9 +50,9 @@ export default function Home() {
             href="https://dataautomators.io/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 transition-colors duration=200"
+            className="bg-white-400 text-blue-400 hover:text-blue-300 transition-colors duration=200"
           >
-            Data Automators
+            DataAutomators
           </a>
           . All rights reserved.
         </p>

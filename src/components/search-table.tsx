@@ -102,7 +102,7 @@ export default function SearchTable() {
   }, [fingerprint, pageParam]);
 
   return (
-    <div className="w-full max-w-5xl mt-4 shadow-md pb-4">
+    <div className="mb-4 p-6 shadow-md rounded-lg w-full max-w-5xl space-y-4">
       <Table className="rounded-lg border">
         <TableCaption>Search Results</TableCaption>
         <TableHeader>
