@@ -22,7 +22,7 @@ export default function Home() {
                     className="font-semibold text-sm text-blue-500 hover:text-blue-500/80 transition-colors duration-200"
                   >ScrapeAutomate
                   </a>
-                  <span className="text-sm">| Develoved By</span>
+                  <span className="text-sm">| Built By</span>
                   <a
                     href="https://scrapeautomate.com/"
                     target="_blank"
