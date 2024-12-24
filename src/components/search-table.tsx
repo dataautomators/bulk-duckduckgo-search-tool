@@ -1,6 +1,6 @@
 "use client";
 
-import { getSearches, deleteSearchesByFingerprint,deleteSearchById } from "@/app/actions";
+import { getSearches, deleteSearchesByFingerprint, deleteSearchById } from "@/app/actions";
 import {
   Table,
   TableBody,
@@ -67,47 +67,45 @@ function ResultAccordion({ result }: { result: string[] }) {
 export default function SearchTable() {
   const [searchResults, setSearchResults] = useState<Search[]>([]);
   const [counts, setCounts] = useState({ pendingCount: 0, completedCount: 0, failedCount: 0 });
-  
   const params = useSearchParams();
   const pageParam = params.get("page");
-  
   const [pageSize, setPageSize] = useState(10);
-  
   const [meta, setMeta] = useState({
     totalCount: 0,
     page: 1,
-    pageSize: pageSize,
+    pageSize: 10,
   });
 
   const { fingerprint } = useFingerprint();
 
-  const fetchSearches = async () => {
-    if (!fingerprint) return;
-
-    const page = pageParam ? parseInt(pageParam) : meta.page;
-    const response = await getSearches(fingerprint, page, pageSize);
-
-    if (response.meta) {
-      setMeta(response.meta);
-    }
-
-    if ('counts' in response) {
-      setCounts(response.counts as { pendingCount: number; completedCount: number; failedCount: number });
-    }
-
-    if (response.searches) {
-      setSearchResults(response.searches as Search[]);
-    }
-  };
-
-
   useEffect(() => {
+    const fetchSearches = async () => {
+      if (!fingerprint) return null;
+
+      const page = pageParam ? parseInt(pageParam) : 1;
+
+      const { searches, meta, counts } = await getSearches(fingerprint, page, pageSize);
+
+      if (meta) {
+        setMeta(meta);
+      }
+
+      if (counts) {
+        setCounts(counts);
+      }
+
+      if (searches) {
+        setSearchResults(searches as Search[]);
+      }
+    };
+
     fetchSearches();
 
-    const intervalId = setInterval(fetchSearches, 5000); // Poll every 5 seconds
-    return () => clearInterval(intervalId); // Cleanup on unmount
+    const interval = setInterval(async () => {
+      await fetchSearches();
+    }, 5000); // Poll every 5 seconds
+    return () => clearInterval(interval);
   }, [fingerprint, pageParam, pageSize]);
-
 
   const handleClear = async () => {
     if (fingerprint) {
@@ -117,13 +115,22 @@ export default function SearchTable() {
     }
   };
 
-
   const handleDelete = async (searchId: string) => {
     await deleteSearchById(searchId);
     setSearchResults(searchResults.filter((search) => search.id !== searchId));
+    // Update counts dynamically
+    setCounts((prevCounts) => {
+      const deletedSearch = searchResults.find((search) => search.id === searchId);
+      if (!deletedSearch) return prevCounts;
+
+      const newCounts = { ...prevCounts };
+      if (deletedSearch.status === "PENDING") newCounts.pendingCount -= 1;
+      if (deletedSearch.status === "COMPLETED") newCounts.completedCount -= 1;
+      if (deletedSearch.status === "FAILED") newCounts.failedCount -= 1;
+
+      return newCounts;
+    });
   };
-
-
 
   return (
     <div className="mb-4 p-6 shadow-md rounded-lg w-full max-w-5xl space-y-4">
@@ -138,18 +145,21 @@ export default function SearchTable() {
             <div className="text-red-500">Failed: {counts.failedCount}</div>
           </div>
         </div>
-        <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(parseInt(value))}>
+        <Select
+          value={pageSize.toString()}
+          onValueChange={(value) => setPageSize(parseInt(value))}
+        >
           <SelectTrigger className="w-32">
             <SelectValue placeholder="Page Size" />
           </SelectTrigger>
           <SelectContent>
-            {[5, 10, 20, 50].map(size => (
-              <SelectItem key={size} value={size.toString()}>{size}</SelectItem>
-            ))}
+            <SelectItem value="5">5</SelectItem>
+            <SelectItem value="10">10</SelectItem>
+            <SelectItem value="20">20</SelectItem>
+            <SelectItem value="50">50</SelectItem>
           </SelectContent>
         </Select>
       </div>
-
       <Table className="rounded-lg border">
         <TableCaption></TableCaption>
         <TableHeader>
@@ -157,9 +167,9 @@ export default function SearchTable() {
             <TableHead className="text-primary md:w-[30%]">Query</TableHead>
             <TableHead className="text-primary w-full">Result</TableHead>
             <TableHead className="text-primary text-center">Status</TableHead>
+            <TableHead className="text-primary text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
-
         <TableBody>
           {searchResults.map((searchResult) => (
             <TableRow key={searchResult.id}>
@@ -190,21 +200,22 @@ export default function SearchTable() {
                   Delete
                 </Button>
               </TableCell>
-              
             </TableRow>
           ))}
         </TableBody>
-
         <TableFooter>
           <TableRow>
-            <TableCell colSpan={3} className="text-right font-bold">
+            <TableCell colSpan={4} className="text-right font-bold">
               {searchResults.length} of {meta.totalCount} results
             </TableCell>
           </TableRow>
         </TableFooter>
       </Table>
-
-      <Pagination total={meta.totalCount} currentPage={meta.page} pageSize={meta.pageSize} />
+      <Pagination
+        total={meta.totalCount}
+        currentPage={meta.page}
+        pageSize={meta.pageSize}
+      />
     </div>
   );
 }
