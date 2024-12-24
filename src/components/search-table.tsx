@@ -92,6 +92,7 @@ export default function SearchTable() {
 
       if (searches) {
         setSearchResults(searches as Search[]);
+
       }
     };
 
@@ -101,38 +102,10 @@ export default function SearchTable() {
       await fetchSearches();
     }, 5000); // Poll every 5 seconds
     return () => clearInterval(interval);
-  }, [fingerprint, pageParam, pageSize]);
-
-  const handleClear = async () => {
-    if (fingerprint) {
-      await deleteSearchesByFingerprint(fingerprint);
-      setSearchResults([]);
-    }
-  };
+  }, [fingerprint, pageParam]);
 
   return (
     <div className="mb-4 p-6 shadow-md rounded-lg w-full max-w-5xl space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex space-x-4">
-          <Button variant="outline" onClick={handleClear}>
-            Clear Searches
-          </Button>
-        </div>
-        <Select
-          value={pageSize.toString()}
-          onValueChange={(value) => setPageSize(parseInt(value))}
-        >
-          <SelectTrigger className="w-32">
-            <SelectValue placeholder="Page Size" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="5">5</SelectItem>
-            <SelectItem value="10">10</SelectItem>
-            <SelectItem value="20">20</SelectItem>
-            <SelectItem value="50">50</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
       <Table className="rounded-lg border">
         <TableCaption></TableCaption>
         <TableHeader>
