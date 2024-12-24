@@ -107,6 +107,7 @@ export default function SearchTable() {
     return () => clearInterval(interval);
   }, [fingerprint, pageParam, pageSize]);
 
+  
   const handleClear = async () => {
     if (fingerprint) {
       await deleteSearchesByFingerprint(fingerprint);

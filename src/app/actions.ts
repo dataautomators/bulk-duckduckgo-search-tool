@@ -10,7 +10,6 @@ const searchSchema = zod.object({
   fingerprint: zod.string(),
 });
 
-
 const getSearches = async (
   fingerprint: string,
   page: number,
@@ -22,8 +21,8 @@ const getSearches = async (
 
   const pageNumber = page || 1;
 
-  const [searches, totalCount] = await Promise.all([
-    await prisma.search.findMany({
+  const [searches, totalCount, pendingCount, completedCount, failedCount] = await Promise.all([
+    prisma.search.findMany({
       where: {
         user: {
           fingerprint: fingerprint,
@@ -35,18 +34,43 @@ const getSearches = async (
       skip: (pageNumber - 1) * pageSize,
       take: pageSize,
     }),
-    await prisma.search.count({
+    prisma.search.count({
       where: {
         user: {
           fingerprint: fingerprint,
         },
       },
     }),
+    prisma.search.count({
+      where: {
+        user: {
+          fingerprint: fingerprint,
+        },
+        status: "PENDING",
+      },
+    }),
+    prisma.search.count({
+      where: {
+        user: {
+          fingerprint: fingerprint,
+        },
+        status: "COMPLETED",
+      },
+    }),
+    prisma.search.count({
+      where: {
+        user: {
+          fingerprint: fingerprint,
+        },
+        status: "FAILED",
+      },
+    }),
   ]);
 
-  return { searches, meta: { totalCount, page: pageNumber, pageSize } };
+  return { searches, meta: { totalCount, page: pageNumber, pageSize }, counts: { pendingCount, completedCount, failedCount } };
 };
- const addSearches = async (searches: {
+
+const addSearches = async (searches: {
   queries: string[];
   fingerprint: string;
 }) => {
@@ -116,7 +140,7 @@ const addSearch = async (search: { query: string; fingerprint: string; userId: s
   await jobQueue.add("search", { id: searchId });
 };
 
- const deleteSearchesByFingerprint = async (fingerprint: string) => {
+const deleteSearchesByFingerprint = async (fingerprint: string) => {
   const user = await prisma.user.findUnique({
     where: { fingerprint },
   });
@@ -139,7 +163,6 @@ const addSearch = async (search: { query: string; fingerprint: string; userId: s
   }
 };
 
-
 const deleteSearchById = async (searchId: string) => {
   await prisma.search.delete({
     where: { id: searchId },
@@ -147,12 +170,9 @@ const deleteSearchById = async (searchId: string) => {
 };
 
 export {
-
-  addSearch,
   getSearches,
   addSearches,
+  addSearch,
   deleteSearchesByFingerprint,
   deleteSearchById,
-
-}
-
+};
