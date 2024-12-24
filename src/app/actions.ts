@@ -140,14 +140,19 @@ const addSearch = async (search: { query: string; fingerprint: string; userId: s
 };
 
 
-
+const deleteSearchById = async (searchId: string) => {
+  await prisma.search.delete({
+    where: { id: searchId },
+  });
+};
 
 export {
 
   addSearch,
   getSearches,
   addSearches,
-  deleteSearchesByFingerprint
+  deleteSearchesByFingerprint,
+  deleteSearchById,
 
 }
 

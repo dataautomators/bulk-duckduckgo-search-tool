@@ -1,6 +1,6 @@
 "use client";
 
-import { getSearches, deleteSearchesByFingerprint } from "@/app/actions";
+import { getSearches, deleteSearchesByFingerprint,deleteSearchById } from "@/app/actions";
 import {
   Table,
   TableBody,
@@ -15,9 +15,7 @@ import useFingerprint from "@/hooks/useFingerprint";
 import { cn } from "@/lib/utils";
 import { Search } from "@prisma/client";
 import { ChevronsUpDown } from "lucide-react";
-import * as React from "react";
-import { useEffect, useState } from "react";
-
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,
@@ -26,18 +24,20 @@ import {
 } from "@/components/ui/collapsible";
 import { useSearchParams } from "next/navigation";
 import Pagination from "./pagination";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 function ResultAccordion({ result }: { result: string[] }) {
-  const [isOpen, setIsOpen] = React.useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const restResults = result.slice(1);
 
   return (
-    <Collapsible
-      open={isOpen}
-      onOpenChange={setIsOpen}
-      className="space-y-2 w-full"
-    >
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-2 w-full">
       <div className="flex items-center gap-4">
         <h4 className="text-sm">1. {result[0]}</h4>
         {restResults.length > 0 && (
@@ -52,12 +52,11 @@ function ResultAccordion({ result }: { result: string[] }) {
       {restResults.length > 0 && (
         <CollapsibleContent className="space-y-2">
           <ol className="list-decimal list-inside" start={2}>
-            {restResults.length &&
-              restResults.map((item, index) => (
-                <li key={item + index} className="font-mono text-sm">
-                  {item}
-                </li>
-              ))}
+            {restResults.map((item, index) => (
+              <li key={item + index} className="font-mono text-sm">
+                {item}
+              </li>
+            ))}
           </ol>
         </CollapsibleContent>
       )}
@@ -67,48 +66,64 @@ function ResultAccordion({ result }: { result: string[] }) {
 
 export default function SearchTable() {
   const [searchResults, setSearchResults] = useState<Search[]>([]);
+  const [counts, setCounts] = useState({ pendingCount: 0, completedCount: 0, failedCount: 0 });
+  
   const params = useSearchParams();
   const pageParam = params.get("page");
+  
   const [pageSize, setPageSize] = useState(10);
+  
   const [meta, setMeta] = useState({
     totalCount: 0,
     page: 1,
-    pageSize: 10,
+    pageSize: pageSize,
   });
 
   const { fingerprint } = useFingerprint();
 
+  const fetchSearches = async () => {
+    if (!fingerprint) return;
+
+    const page = pageParam ? parseInt(pageParam) : meta.page;
+    const response = await getSearches(fingerprint, page, pageSize);
+
+    if (response.meta) {
+      setMeta(response.meta);
+    }
+
+    if ('counts' in response) {
+      setCounts(response.counts as { pendingCount: number; completedCount: number; failedCount: number });
+    }
+
+    if (response.searches) {
+      setSearchResults(response.searches as Search[]);
+    }
+  };
+
+
   useEffect(() => {
-    const fetchSearches = async () => {
-      if (!fingerprint) return null;
-
-      const page = pageParam ? parseInt(pageParam) : 1;
-
-      const { searches, meta } = await getSearches(fingerprint, page, pageSize);
-
-      if (meta) {
-        setMeta(meta);
-      }
-
-      if (searches) {
-        setSearchResults(searches as Search[]);
-      }
-    };
-
     fetchSearches();
 
-    const interval = setInterval(async () => {
-      await fetchSearches();
-    }, 5000); // Poll every 5 seconds
-    return () => clearInterval(interval);
+    const intervalId = setInterval(fetchSearches, 5000); // Poll every 5 seconds
+    return () => clearInterval(intervalId); // Cleanup on unmount
   }, [fingerprint, pageParam, pageSize]);
+
 
   const handleClear = async () => {
     if (fingerprint) {
       await deleteSearchesByFingerprint(fingerprint);
       setSearchResults([]);
+      setCounts({ pendingCount: 0, completedCount: 0, failedCount: 0 });
     }
   };
+
+
+  const handleDelete = async (searchId: string) => {
+    await deleteSearchById(searchId);
+    setSearchResults(searchResults.filter((search) => search.id !== searchId));
+  };
+
+
 
   return (
     <div className="mb-4 p-6 shadow-md rounded-lg w-full max-w-5xl space-y-4">
@@ -117,22 +132,24 @@ export default function SearchTable() {
           <Button variant="outline" onClick={handleClear}>
             Clear
           </Button>
+          <div className="flex justify-center items-center space-x-4">
+            <div className="text-yellow-500">Pending: {counts.pendingCount}</div>
+            <div className="text-green-500">Completed: {counts.completedCount}</div>
+            <div className="text-red-500">Failed: {counts.failedCount}</div>
+          </div>
         </div>
-        <Select
-          value={pageSize.toString()}
-          onValueChange={(value) => setPageSize(parseInt(value))}
-        >
+        <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(parseInt(value))}>
           <SelectTrigger className="w-32">
             <SelectValue placeholder="Page Size" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="5">5</SelectItem>
-            <SelectItem value="10">10</SelectItem>
-            <SelectItem value="20">20</SelectItem>
-            <SelectItem value="50">50</SelectItem>
+            {[5, 10, 20, 50].map(size => (
+              <SelectItem key={size} value={size.toString()}>{size}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
+
       <Table className="rounded-lg border">
         <TableCaption></TableCaption>
         <TableHeader>
@@ -142,6 +159,7 @@ export default function SearchTable() {
             <TableHead className="text-primary text-center">Status</TableHead>
           </TableRow>
         </TableHeader>
+
         <TableBody>
           {searchResults.map((searchResult) => (
             <TableRow key={searchResult.id}>
@@ -167,9 +185,16 @@ export default function SearchTable() {
                   {searchResult.status}
                 </div>
               </TableCell>
+              <TableCell className="border-b text-center">
+                <Button variant="outline" size="sm" onClick={() => handleDelete(searchResult.id)}>
+                  Delete
+                </Button>
+              </TableCell>
+              
             </TableRow>
           ))}
         </TableBody>
+
         <TableFooter>
           <TableRow>
             <TableCell colSpan={3} className="text-right font-bold">
@@ -178,11 +203,8 @@ export default function SearchTable() {
           </TableRow>
         </TableFooter>
       </Table>
-      <Pagination
-        total={meta.totalCount}
-        currentPage={meta.page}
-        pageSize={meta.pageSize}
-      />
+
+      <Pagination total={meta.totalCount} currentPage={meta.page} pageSize={meta.pageSize} />
     </div>
   );
 }
