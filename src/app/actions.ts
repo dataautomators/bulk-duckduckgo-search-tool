@@ -159,6 +159,18 @@ const addSearch = async (searchData: { query: string; fingerprintId: string }) =
 };
 
 
+const stopProcessing = async () => {
+  try {
+    await jobQueue.pause();
+    console.log("Job processing has been paused.");
+    return { message: "Job processing has been paused." };
+  } catch (error) {
+    console.error("Error stopping job processing:", error);
+    return { error: "Failed to stop job processing" };
+  }
+};
+
+
 const deleteSearchesByFingerprint = async (fingerprint:string) => {
   try {
     const userFingerprint = await prisma.fingerprint.findUnique({
@@ -209,4 +221,5 @@ export {
    addSearch,
    deleteSearchesByFingerprint,
    deleteSearchById,
+   stopProcessing
 };

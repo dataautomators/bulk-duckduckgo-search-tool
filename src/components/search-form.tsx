@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import useFingerprint from "@/hooks/useFingerprint";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -25,7 +25,8 @@ const formSchema = z.object({
 export default function SearchForm() {
   const { fingerprint } = useFingerprint();
   const [loading, setLoading] = useState(false);
-
+  const [stopping, setStopping] = useState(false);
+  const processRef = useRef<Promise<void> | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -36,18 +37,40 @@ export default function SearchForm() {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
+    setStopping(false);
     const formattedQueries = values.queries
       .split("\n")
       .map((query) => query.trim())
       .filter(Boolean);
 
-    // simulate processing
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    await addSearches({ queries: formattedQueries, fingerprint: fingerprint! });
-    setLoading(false);
+    processRef.current = new Promise(async (resolve) => {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      if (stopping) {
+        console.log("Processing stopped.");
+        return;
+      }
+      await addSearches({ queries: formattedQueries, fingerprint: fingerprint! });
+      resolve();
+    });
 
-    form.reset();
+    try {
+      await processRef.current;
+    } catch (error) {
+      console.error("Error during processing:", error);
+    } finally {
+      setLoading(false);
+      form.reset();
+      processRef.current = null;
+    }
+  };
 
+  const handleStopProcessing = () => {
+    if (processRef.current) {
+      console.log("Stopping processing...");
+      setStopping(true);
+      processRef.current = null;
+      setLoading(false);
+    }
   };
 
   return (
@@ -63,7 +86,6 @@ export default function SearchForm() {
                 <FormControl>
                   <Textarea rows={10} {...field} />
                 </FormControl>
-
                 <FormMessage />
               </FormItem>
             )}
@@ -82,9 +104,17 @@ export default function SearchForm() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => form.reset()}
+              onClick={handleStopProcessing}
+              disabled={!loading}
             >
-              Clear
+              {stopping ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Stopping...
+                </>
+              ) : (
+                'Stop Processing'
+              )}
             </Button>
           </div>
         </form>
