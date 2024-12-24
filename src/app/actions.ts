@@ -24,8 +24,10 @@ const getSearches = async (
   const [searches, totalCount, pendingCount, completedCount, failedCount] = await Promise.all([
     prisma.search.findMany({
       where: {
-        user: {
-          fingerprint: fingerprint,
+        fingerprints: {
+          some: {
+            fingerprint: fingerprint,
+          },
         },
       },
       orderBy: {
@@ -36,31 +38,39 @@ const getSearches = async (
     }),
     prisma.search.count({
       where: {
-        user: {
-          fingerprint: fingerprint,
+        fingerprints: {
+          some: {
+            fingerprint: fingerprint,
+          },
         },
       },
     }),
     prisma.search.count({
       where: {
-        user: {
-          fingerprint: fingerprint,
+        fingerprints: {
+          some: {
+            fingerprint: fingerprint,
+          },
         },
         status: "PENDING",
       },
     }),
     prisma.search.count({
       where: {
-        user: {
-          fingerprint: fingerprint,
+        fingerprints: {
+          some: {
+            fingerprint: fingerprint,
+          },
         },
         status: "COMPLETED",
       },
     }),
     prisma.search.count({
       where: {
-        user: {
-          fingerprint: fingerprint,
+        fingerprints: {
+          some: {
+            fingerprint: fingerprint,
+          },
         },
         status: "FAILED",
       },
@@ -82,29 +92,37 @@ const addSearches = async (searches: {
 
   const { queries, fingerprint } = validQueries.data;
 
-  let user = await prisma.user.findUnique({
+  let userFingerprint = await prisma.fingerprint.findUnique({
     where: { fingerprint },
   });
 
-  if (!user) {
-    user = await prisma.user.create({
+  if (!userFingerprint) {
+    userFingerprint = await prisma.fingerprint.create({
       data: { fingerprint },
     });
   }
 
   for (const query of queries) {
-    await addSearch({ query, fingerprint, userId: user.id });
+    await addSearch({ query, fingerprintId: userFingerprint.id });
   }
 
   // Cache the user and searches for 1 day
-  await connection.setex(fingerprint, 86400, JSON.stringify({ user, searches }));
+  await connection.setex(fingerprint, 86400, JSON.stringify({ userFingerprint, searches }));
 };
 
-const addSearch = async (search: { query: string; fingerprint: string; userId: string }) => {
+const addSearch = async (search: { query: string; fingerprintId: string }) => {
+  if (!search || !search.query || !search.fingerprintId) {
+    throw new TypeError('The "search" argument must be an object with "query" and "fingerprintId" properties.');
+  }
+
   const existingSearch = await prisma.search.findFirst({
     where: {
       query: search.query,
-      userId: search.userId,
+      fingerprints: {
+        some: {
+          id: search.fingerprintId,
+        },
+      },
     },
   });
 
@@ -131,7 +149,9 @@ const addSearch = async (search: { query: string; fingerprint: string; userId: s
     const newSearch = await prisma.search.create({
       data: {
         query: search.query,
-        userId: search.userId,
+        fingerprints: {
+          connect: { id: search.fingerprintId },
+        },
       },
     });
     searchId = newSearch.id;
@@ -141,20 +161,24 @@ const addSearch = async (search: { query: string; fingerprint: string; userId: s
 };
 
 const deleteSearchesByFingerprint = async (fingerprint: string) => {
-  const user = await prisma.user.findUnique({
+  const userFingerprint = await prisma.fingerprint.findUnique({
     where: { fingerprint },
   });
 
-  if (user) {
+  if (userFingerprint) {
     await prisma.search.deleteMany({
       where: {
-        userId: user.id,
+        fingerprints: {
+          some: {
+            id: userFingerprint.id,
+          },
+        },
       },
     });
 
-    await prisma.user.delete({
+    await prisma.fingerprint.delete({
       where: {
-        id: user.id,
+        id: userFingerprint.id,
       },
     });
 
