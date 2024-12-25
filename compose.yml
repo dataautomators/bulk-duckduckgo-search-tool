@@ -9,7 +9,7 @@ services:
     command: redis-server --appendonly yes
     healthcheck:
       test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
-    mem_limit: 500m
+
 
   postgresql:
     image: bitnami/postgresql:16.3.0
@@ -20,7 +20,7 @@ services:
       - DATABASE_URL=${DATABASE_URL}
     ports:
       - '5432:5432'
-    mem_limit: 500m
+
 
 volumes:
   redis-data:
