@@ -24,11 +24,10 @@ model Fingerprint {
 model Search {
   id               String   @id @default(cuid())
   query            String
-  results          String[]
+  results          Json[]   
   status           Status   @default(PENDING)
   failedAttempts   Int      @default(0)
   failedMessage    String?
   createdAt        DateTime @default(now())
   userFingerprints Fingerprint[]
-
 }

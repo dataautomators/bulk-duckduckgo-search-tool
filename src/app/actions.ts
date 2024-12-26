@@ -74,6 +74,8 @@ const getSearches = async (fingerprint: string, page: number, pageSize: number =
       }),
     ]);
 
+    console.log("Fetched searches:", searches.map(s => s.results));
+
     return {
       searches: searches || [],
       meta: { totalCount: totalCount || 0, page: pageNumber, pageSize },

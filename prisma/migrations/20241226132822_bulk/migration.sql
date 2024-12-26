@@ -15,7 +15,7 @@ CREATE TABLE "Fingerprint" (
 CREATE TABLE "Search" (
     "id" TEXT NOT NULL,
     "query" TEXT NOT NULL,
-    "results" TEXT[],
+    "results" JSONB[],
     "status" "Status" NOT NULL DEFAULT 'PENDING',
     "failedAttempts" INTEGER NOT NULL DEFAULT 0,
     "failedMessage" TEXT,

@@ -32,37 +32,47 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-function ResultAccordion({ result }: { result: string[] }) {
+type Json = { [key: string]: any };
+
+function ResultAccordion({ result }: { result: Json[] }) {
   const [isOpen, setIsOpen] = useState(false);
   const restResults = result.slice(1);
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-2 w-full">
-      <div className="flex items-center gap-4">
-        <h4 className="text-sm">1. {result[0]}</h4>
+    <div className="flex items-center gap-4">
+        <h4 className="text-sm font-semibold">
+            {/* Make the text a link */}
+            <a href={result[0].href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                {result[0].text}
+            </a>
+        </h4>
         {restResults.length > 0 && (
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="w-9 p-0">
-              <ChevronsUpDown className="h-4 w-4" />
-              <span className="sr-only">Toggle</span>
-            </Button>
-          </CollapsibleTrigger>
+            <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="w-9 p-0">
+                    <ChevronsUpDown className="h-4 w-4" />
+                    <span className="sr-only">Toggle</span>
+                </Button>
+            </CollapsibleTrigger>
         )}
-      </div>
-      {restResults.length > 0 && (
+    </div>
+    {restResults.length > 0 && (
         <CollapsibleContent className="space-y-2">
-          <ol className="list-decimal list-inside" start={2}>
-            {restResults.map((item, index) => (
-              <li key={item + index} className="font-mono text-sm">
-                {item}
-              </li>
-            ))}
-          </ol>
+            <ul className="list-disc pl-4">
+                {restResults.map((item, index) => (
+                    <li key={`${item.text}-${index}`} className="font-mono text-sm">
+                        <a href={item.href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                            {item.text}
+                        </a>
+                    </li>
+                ))}
+            </ul>
         </CollapsibleContent>
-      )}
-    </Collapsible>
-  );
+    )}
+</Collapsible>
+);
 }
+  
 
 export default function SearchTable() {
   const [searchResults, setSearchResults] = useState<Search[]>([]);
@@ -80,57 +90,66 @@ export default function SearchTable() {
 
   useEffect(() => {
     const fetchSearches = async () => {
-      if (!fingerprint) return null;
+      if (!fingerprint) return;
 
       const page = pageParam ? parseInt(pageParam) : 1;
 
-      const { searches, meta, counts } = await getSearches(fingerprint, page, pageSize);
+      try {
+        const { searches, meta, counts } = await getSearches(fingerprint, page, pageSize);
 
-      if (meta) {
-        setMeta(meta);
-      }
+        if (meta) {
+          setMeta(meta);
+        }
 
-      if (counts) {
-        setCounts(counts);
-      }
+        if (counts) {
+          setCounts(counts);
+        }
 
-      if (searches) {
-        setSearchResults(searches as Search[]);
+        if (searches) {
+          setSearchResults(searches as Search[]);
+        }
+      } catch (error) {
+        console.error("Error fetching searches:", error); // Handle any errors
       }
     };
 
     fetchSearches();
 
-    const interval = setInterval(async () => {
-      await fetchSearches();
-    }, 5000); // Poll every 5 seconds
+    const interval = setInterval(fetchSearches, 5000); // Poll every 5 seconds
     return () => clearInterval(interval);
   }, [fingerprint, pageParam, pageSize]);
 
   
   const handleClear = async () => {
     if (fingerprint) {
-      await deleteSearchesByFingerprint(fingerprint);
-      setSearchResults([]);
-      setCounts({ pendingCount: 0, completedCount: 0, failedCount: 0 });
+      try {
+        await deleteSearchesByFingerprint(fingerprint);
+        setSearchResults([]);
+        setCounts({ pendingCount: 0, completedCount: 0, failedCount: 0 });
+      } catch (error) {
+        console.error("Error clearing searches:", error); // Handle any errors
+      }
     }
   };
 
   const handleDelete = async (searchId: string) => {
-    await deleteSearchById(searchId);
-    setSearchResults(searchResults.filter((search) => search.id !== searchId));
-    // Update counts dynamically
-    setCounts((prevCounts) => {
-      const deletedSearch = searchResults.find((search) => search.id === searchId);
-      if (!deletedSearch) return prevCounts;
+    try {
+      await deleteSearchById(searchId);
+      setSearchResults(searchResults.filter((search) => search.id !== searchId));
+      setCounts((prevCounts) => {
+        const deletedSearch = searchResults.find((search) => search.id === searchId);
+        if (!deletedSearch) return prevCounts;
 
-      const newCounts = { ...prevCounts };
-      if (deletedSearch.status === "PENDING") newCounts.pendingCount -= 1;
-      if (deletedSearch.status === "COMPLETED") newCounts.completedCount -= 1;
-      if (deletedSearch.status === "FAILED") newCounts.failedCount -= 1;
+        const newCounts = { ...prevCounts };
+        if (deletedSearch.status === "PENDING") newCounts.pendingCount -= 1;
+        if (deletedSearch.status === "COMPLETED") newCounts.completedCount -= 1;
+        if (deletedSearch.status === "FAILED") newCounts.failedCount -= 1;
 
-      return newCounts;
-    });
+        return newCounts;
+      });
+    } catch (error) {
+      console.error("Error deleting search:", error); // Handle any errors
+    }
   };
 
   return (
@@ -146,10 +165,7 @@ export default function SearchTable() {
             <div className="text-red-500">Failed: {counts.failedCount}</div>
           </div>
         </div>
-        <Select
-          value={pageSize.toString()}
-          onValueChange={(value) => setPageSize(parseInt(value))}
-        >
+        <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(parseInt(value))}>
           <SelectTrigger className="w-32">
             <SelectValue placeholder="Page Size" />
           </SelectTrigger>
@@ -176,10 +192,10 @@ export default function SearchTable() {
             <TableRow key={searchResult.id}>
               <TableCell className="border-b">{searchResult.query}</TableCell>
               <TableCell className="border-b">
-                {searchResult.results.length ? (
-                  <ResultAccordion result={searchResult.results} />
+                {searchResult.results.length > 0 ? (
+                  <ResultAccordion result={searchResult.results as Json[]} />
                 ) : (
-                  "Loading..."
+                  <span className="text-gray-500">No results available</span> // Improved message for no results
                 )}
               </TableCell>
               <TableCell className="border-b text-right">
@@ -201,6 +217,7 @@ export default function SearchTable() {
                   Delete
                 </Button>
               </TableCell>
+
             </TableRow>
           ))}
         </TableBody>
@@ -212,11 +229,7 @@ export default function SearchTable() {
           </TableRow>
         </TableFooter>
       </Table>
-      <Pagination
-        total={meta.totalCount}
-        currentPage={meta.page}
-        pageSize={meta.pageSize}
-      />
+      <Pagination total={meta.totalCount} currentPage={meta.page} pageSize={meta.pageSize} />
     </div>
   );
 }
