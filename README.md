@@ -1,10 +1,10 @@
 # 🔍 Bulk DuckDuckGo Search Tool
-![bulksearch](https://github.com/user-attachments/assets/76e5083e-583d-4f56-868f-b6b66b410604)
+![screenshot-rocks (1)](https://github.com/user-attachments/assets/c46cc432-0a1b-4164-8489-3534a1672c68)
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Powered by ScrapeAutomate](https://img.shields.io/badge/Powered%20by-ScrapeAutomate-orange)](https://scrapeautomate.com)
+[![Powered by ScrapeAutomate](https://img.shields.io/badge/Powered%20by-ScrapeAutomate-blue)](https://scrapeautomate.com)
 
 ## 🚀 Getting Started
 
