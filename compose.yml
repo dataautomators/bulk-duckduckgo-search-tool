@@ -13,9 +13,10 @@ services:
   postgresql:
     image: bitnami/postgresql:16.3.0
     environment:
-      - POSTGRESQL_USERNAME=postgres
-      - POSTGRESQL_PASSWORD=password
-      - POSTGRESQL_DATABASE=bulk-searching
+      - POSTGRESQL_USERNAME=${POSTGRESQL_USERNAME:-postgres}
+      - POSTGRESQL_PASSWORD=${POSTGRESQL_PASSWORD:-password}
+      - POSTGRESQL_DATABASE=${POSTGRESQL_DATABASE:-bulk-searching}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:password@localhost:5432/bulk-searching}
     ports:
       - '5432:5432'
 
