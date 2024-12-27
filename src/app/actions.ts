@@ -1,6 +1,4 @@
 "use server";
-
-import { connection } from "@/lib/redis";
 import prisma from "@/scraper/prisma";
 import { jobQueue } from "@/scraper/queue";
 import * as zod from "zod";
@@ -110,8 +108,9 @@ const addSearches = async (searches: { queries: string[]; fingerprint: string })
     await addSearch({ query, fingerprintId: userFingerprint.id });
   }
 
-  await connection.setex(fingerprint, 86400, JSON.stringify({ userFingerprint, searches }));
 };
+
+
 
 const addSearch = async (searchData: { query: string; fingerprintId: string }) => {
   if (!searchData || !searchData.query || !searchData.fingerprintId) {
@@ -159,57 +158,58 @@ const addSearch = async (searchData: { query: string; fingerprintId: string }) =
   }
 };
 
-const stopProcessing = async () => {
-  try {
-    await jobQueue.pause();
-    console.log("Job processing has been paused.");
-    return { message: "Job processing has been paused." };
-  } catch (error) {
-    console.error("Error stopping job processing:", error);
-    return { error: "Failed to stop job processing" };
-  }
-};
 
-const deleteSearchesByFingerprint = async (fingerprint: string) => {
+const disconnectSearchesByFingerprint = async (fingerprint: string) => {
   try {
     const userFingerprint = await prisma.fingerprint.findUnique({
       where: { fingerprint },
+      include: { searches: true }, // Include searches to disconnect
     });
 
     if (userFingerprint) {
-      await prisma.search.deleteMany({
-        where: {
-          userFingerprints: {
-            some: {
-              id: userFingerprint.id,
+      await Promise.all(
+        userFingerprint.searches.map(async (search) => {
+          await prisma.search.update({
+            where: { id: search.id },
+            data: {
+              userFingerprints: {
+                disconnect: { id: userFingerprint.id },
+              },
             },
-          },
-        },
-      });
-
-      await prisma.fingerprint.delete({
-        where: {
-          id: userFingerprint.id,
-        },
-      });
-
-      // Clear the cache
-      await connection.del(fingerprint);
+          });
+        })
+      );
+      console.log(`Searches disconnected from fingerprint: ${fingerprint}`);
     }
   } catch (error) {
-    console.error("Error deleting searches by fingerprint:", error);
-    throw new Error("Failed to delete searches by fingerprint");
+    console.error("Error disconnecting searches by fingerprint:", error);
+    throw new Error("Failed to disconnect searches by fingerprint");
   }
 };
 
-const deleteSearchById = async (searchId: string) => {
+const disconnectSearchByID = async (searchId: string) => {
   try {
-    await prisma.search.delete({
+    const search = await prisma.search.findUnique({
       where: { id: searchId },
+      include: { userFingerprints: true },
     });
+
+    if (search) {
+      await prisma.search.update({
+        where: { id: searchId },
+        data: {
+          userFingerprints: {
+            disconnect: search.userFingerprints.map(fingerprint => ({ id: fingerprint.id })), // Disconnect all associated fingerprints
+          },
+        },
+      });
+      console.log(`Search with ID ${searchId} disconnected from all fingerprints.`);
+    } else {
+      console.log(`No search found with ID: ${searchId}`);
+    }
   } catch (error) {
-    console.error("Error deleting search by ID:", error);
-    throw new Error("Failed to delete search");
+    console.error("Error disconnecting search by ID:", error);
+    throw new Error("Failed to disconnect search");
   }
 };
 
@@ -217,7 +217,6 @@ export {
   getSearches,
   addSearches,
   addSearch,
-  deleteSearchesByFingerprint,
-  deleteSearchById,
-  stopProcessing,
+  disconnectSearchesByFingerprint,
+  disconnectSearchByID,
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { getSearches, deleteSearchesByFingerprint, deleteSearchById } from "@/app/actions";
+import { getSearches, disconnectSearchByID, disconnectSearchesByFingerprint } from "@/app/actions";
 import {
   Table,
   TableBody,
@@ -123,7 +123,7 @@ export default function SearchTable() {
   const handleClear = async () => {
     if (fingerprint) {
       try {
-        await deleteSearchesByFingerprint(fingerprint);
+        await disconnectSearchesByFingerprint(fingerprint);
         setSearchResults([]);
         setCounts({ pendingCount: 0, completedCount: 0, failedCount: 0 });
       } catch (error) {
@@ -134,7 +134,7 @@ export default function SearchTable() {
 
   const handleDelete = async (searchId: string) => {
     try {
-      await deleteSearchById(searchId);
+      await disconnectSearchByID(searchId);
       setSearchResults(searchResults.filter((search) => search.id !== searchId));
       setCounts((prevCounts) => {
         const deletedSearch = searchResults.find((search) => search.id === searchId);
