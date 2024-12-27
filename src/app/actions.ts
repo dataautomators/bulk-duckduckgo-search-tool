@@ -26,7 +26,7 @@ const getSearches = async (fingerprint: string, page: number, pageSize: number =
           },
         },
         orderBy: {
-          createdAt: "asc",
+          createdAt: "desc",
         },
         skip: (pageNumber - 1) * pageSize,
         take: pageSize,
@@ -104,12 +104,14 @@ const addSearches = async (searches: { queries: string[]; fingerprint: string })
     });
   }
 
+
+  queries.reverse()
+
   for (const query of queries) {
+
     await addSearch({ query, fingerprintId: userFingerprint.id });
   }
-
 };
-
 
 
 const addSearch = async (searchData: { query: string; fingerprintId: string }) => {
@@ -118,6 +120,25 @@ const addSearch = async (searchData: { query: string; fingerprintId: string }) =
   }
 
   try {
+    const existingCompletedSearch = await prisma.search.findFirst({
+      where: {
+        query: searchData.query,
+        status: "COMPLETED",
+      },
+    });
+
+ 
+    if (existingCompletedSearch) {
+      await prisma.search.update({
+        where: { id: existingCompletedSearch.id },
+        data: {
+          userFingerprints: { connect: { id: searchData.fingerprintId } },
+        },
+      });
+      return; // Exit early since we have connected the completed search
+    }
+
+
     const existingSearch = await prisma.search.findFirst({
       where: {
         query: searchData.query,
@@ -144,8 +165,8 @@ const addSearch = async (searchData: { query: string; fingerprintId: string }) =
       const newSearch = await prisma.search.create({
         data: {
           query: searchData.query,
-          results: [], // Initialize results as an empty array or however you want to handle it
-          userFingerprints: { connect: { id: searchData.fingerprintId } }, // Connect to the existing fingerprint
+          results: [], 
+          userFingerprints: { connect: { id: searchData.fingerprintId } }, 
         },
       });
       searchId = newSearch.id;
@@ -187,19 +208,18 @@ const disconnectSearchesByFingerprint = async (fingerprint: string) => {
   }
 };
 
-const disconnectSearchByID = async (searchId: string) => {
+const disconnectSearchByID = async (searchId: string,fingerprint:string) => {
   try {
     const search = await prisma.search.findUnique({
       where: { id: searchId },
       include: { userFingerprints: true },
     });
-
     if (search) {
       await prisma.search.update({
         where: { id: searchId },
         data: {
           userFingerprints: {
-            disconnect: search.userFingerprints.map(fingerprint => ({ id: fingerprint.id })), // Disconnect all associated fingerprints
+            disconnect: [{ fingerprint }], 
           },
         },
       });
