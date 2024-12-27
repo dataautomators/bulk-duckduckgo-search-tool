@@ -154,12 +154,12 @@ export default function SearchTable() {
 
   return (
     <div className="mb-4 p-6 shadow-md rounded-lg w-full max-w-5xl space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex space-x-4">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
+        <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
           <Button variant="outline" onClick={handleClear}>
             Clear All
           </Button>
-          <div className="flex justify-center items-center space-x-4">
+          <div className="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
             <div className="text-yellow-500">Pending: {counts.pendingCount}</div>
             <div className="text-green-500">Completed: {counts.completedCount}</div>
             <div className="text-red-500">Failed: {counts.failedCount}</div>
