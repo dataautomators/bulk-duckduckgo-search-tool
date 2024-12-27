@@ -15,13 +15,21 @@ export const fetchData = async (query: string) => {
     await page.goto(`https://duckduckgo.com/?q=${formattedQuery}`);
 
     await page.waitForSelector('a[data-testid="result-title-a"]');
+
+
     const result = (await page.evaluate(() => {
       const links = Array.from(
         document.querySelectorAll('a[data-testid="result-title-a"]')
       );
-      return links.map((link) => link.textContent);
-    })) as string[];
+      
+      return links.map((link) => ({
+        text: link.textContent,
+        href: link.getAttribute('href'),
+      }));
+    })) as { text: string | null; href: string | null }[];
+
     await page.close();
+
     return result;
   } catch (error) {
     console.error(error);
@@ -32,3 +40,5 @@ export const fetchData = async (query: string) => {
     }
   }
 };
+
+// await fetchData("Hasin Hayder")
