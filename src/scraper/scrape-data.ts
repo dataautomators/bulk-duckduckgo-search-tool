@@ -40,5 +40,3 @@ export const fetchData = async (query: string) => {
     }
   }
 };
-
-// await fetchData("Hasin Hayder")
