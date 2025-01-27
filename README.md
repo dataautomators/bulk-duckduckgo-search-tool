@@ -73,6 +73,27 @@ Before you begin, ensure you have the following installed:
 - **User-Friendly Interface**: Built on Next.js for a seamless experience.
 
 
+## Troubleshooting
+
+#### Common Issues
+
+**Error: Could not find Chrome:** 
+
+If you encounter an error related to Chrome not being found while running the application, follow these steps:
+
+1. **Install the Required Browser**:
+
+   ```sh
+   npx puppeteer browsers install chrome
+   ```
+
+2. **Verify Cache Path Configuration**:
+
+   Ensure that the cache path is correctly set. You can configure the cache path by setting the **PUPPETEER_CACHE_DIR** environment variable if needed:
+   ```
+   export PUPPETEER_CACHE_DIR=/home/yourusername/.cache/puppeteer
+   ```
+
 ## License
 
 This project is licensed under the MIT License.
