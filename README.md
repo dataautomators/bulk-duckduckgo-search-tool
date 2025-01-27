@@ -1,5 +1,6 @@
 # 🔍 Bulk DuckDuckGo Search Tool
-![screenshot-rocks (1)](https://github.com/user-attachments/assets/c46cc432-0a1b-4164-8489-3534a1672c68)
+
+![image](https://github.com/user-attachments/assets/d979d21b-b3bf-49db-b683-d47975af2a24)
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org)
